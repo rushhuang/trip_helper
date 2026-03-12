@@ -31,8 +31,6 @@ pwa/
 ├── app.js              主程式（行程列表 + 搜尋 + 快捷動作）
 ├── map.js              地圖模組（Leaflet 標記 + 路線）
 ├── trips.js            行程管理模組（localStorage CRUD）
-├── data/
-│   └── itinerary.json  預設行程（首次載入時自動匯入）
 └── icons/
     ├── icon-192.png
     ├── icon-512.png

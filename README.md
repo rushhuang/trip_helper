@@ -27,8 +27,6 @@ trip_helper/
 │   ├── app.js              主程式（行程列表 + 搜尋 + 快捷動作）
 │   ├── map.js              地圖模組（Leaflet 標記 + 路線）
 │   ├── trips.js            行程管理模組（localStorage CRUD）
-│   ├── data/
-│   │   └── itinerary.json  預設行程資料
 │   └── icons/              PWA 圖示（192/512，any/maskable）
 ├── scripts/
 │   ├── xlsx_to_json.py     Excel → JSON 轉換腳本
