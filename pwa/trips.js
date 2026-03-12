@@ -98,6 +98,11 @@ export function loadActiveTrip() {
   return getTrip(id);
 }
 
+/** Save (overwrite) the full data for an existing trip. */
+export function saveTrip(id, data) {
+  localStorage.setItem(_tripKey(id), JSON.stringify(data));
+}
+
 /** Check if any trips exist. */
 export function hasTrips() {
   return _getIndex().length > 0;

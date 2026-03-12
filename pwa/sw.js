@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'trip-v11';
+const CACHE_VERSION = 'trip-v12';
 const APP_SHELL = [
   'index.html',
   'style.css',
