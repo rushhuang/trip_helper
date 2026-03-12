@@ -30,7 +30,11 @@ trip_helper/
 ├── scripts/
 │   ├── xlsx_to_json.py     Excel → JSON 轉換腳本
 │   └── geocode.py          Nominatim 自動地理編碼腳本
-├── serve_https.py          本地 HTTPS 測試伺服器
+├── example/
+│   ├── example.xlsx        Excel 格式範例（3 天 6 站）
+│   └── example.json        itinerary.json 格式範例
+├── deploy.sh               互動式部署選單
+├── serve_https.py          本地 HTTPS 伺服器（自簽憑證）
 └── ROADMAP.md              開發路線圖
 ```
 
