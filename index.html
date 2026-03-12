@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1e90ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>行程查詢</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+  <meta name="apple-mobile-web-app-title" content="行程查詢">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+  <!-- Header -->
+  <header id="header">
+    <h1>行程查詢</h1>
+    <div id="search-wrap">
+      <input type="search" id="search-input" placeholder="搜尋地點..." autocomplete="off">
+      <button id="search-clear" hidden>&times;</button>
+    </div>
+  </header>
+
+  <!-- Day Tabs -->
+  <nav id="day-tabs"></nav>
+
+  <!-- Main Content -->
+  <main id="main">
+    <!-- List View -->
+    <section id="list-view" class="view active">
+      <div id="stop-list"></div>
+    </section>
+
+    <!-- Map View -->
+    <section id="map-view" class="view">
+      <div id="map-chips"></div>
+      <div id="map-container"></div>
+      <div id="map-controls">
+        <button id="btn-fit-all" title="縮放至可見標記">定位</button>
+        <button id="btn-fit-today" title="顯示今日">今日</button>
+      </div>
+      <div id="map-summary" hidden></div>
+    </section>
+
+    <!-- Trip Manager View -->
+    <section id="manage-view" class="view">
+      <div class="manage-header">
+        <h2>行程管理</h2>
+        <button id="btn-import" class="import-btn">匯入 JSON</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
+      </div>
+      <div id="trip-list"></div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-view="list-view">
+      <span class="nav-icon">&#x1F4CB;</span>
+      <span>行程列表</span>
+    </button>
+    <button class="nav-btn" data-view="map-view">
+      <span class="nav-icon">&#x1F5FA;</span>
+      <span>路線地圖</span>
+    </button>
+    <button class="nav-btn" data-view="manage-view">
+      <span class="nav-icon">&#x2699;</span>
+      <span>行程管理</span>
+    </button>
+  </nav>
+
+  <!-- Toast -->
+  <div id="toast" hidden></div>
+
+  <!-- Install Banner (Android Chrome) -->
+  <div id="install-banner" hidden>
+    <span>加入主畫面，離線也能查行程</span>
+    <button id="install-btn">安裝</button>
+    <button id="install-dismiss">&times;</button>
+  </div>
+
+  <!-- iOS Install Guide -->
+  <div id="ios-install-guide" hidden>
+    <span>點擊下方 <strong>分享 &#x2934;</strong> 再選「加入主畫面」即可安裝</span>
+    <button id="ios-dismiss">&times;</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js" type="module"></script>
+  <script src="map.js" type="module"></script>
+</body>
+</html>
