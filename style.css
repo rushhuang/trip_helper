@@ -193,6 +193,12 @@ body {
   border-bottom-color: var(--accent);
 }
 
+/* Hide day tabs on map / manage views */
+body[data-view="map-view"] #day-tabs,
+body[data-view="manage-view"] #day-tabs {
+  display: none;
+}
+
 .day-tab .tab-dot {
   display: inline-block;
   width: 8px;
@@ -887,6 +893,12 @@ body {
   #manage-view {
     max-width: 720px;
     margin: 0 auto;
+  }
+
+  /* ── Map / manage: hide sidebar, main spans full width ─────── */
+  body[data-view="map-view"] #main,
+  body[data-view="manage-view"] #main {
+    grid-column: 1 / -1;
   }
 
   /* ── Hide bottom nav ────────────────────────────────────────── */
