@@ -312,6 +312,7 @@ function setupSearch() {
 
 // ── Navigation (bottom nav + desktop nav) ────────────────────────
 function switchView(target) {
+  document.body.dataset.view = target;
   document.querySelectorAll('.nav-btn, .desktop-nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.view === target);
   });
