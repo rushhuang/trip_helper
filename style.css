@@ -559,6 +559,11 @@ body {
 }
 
 /* ── Install Banner ───────────────────────────────────────────── */
+#install-banner[hidden],
+#ios-install-guide[hidden] {
+  display: none;
+}
+
 #install-banner {
   position: fixed;
   bottom: 64px;

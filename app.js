@@ -418,9 +418,7 @@ function renderTripManager() {
     btnDelete.onclick = () => {
       if (!confirm(`確定刪除「${meta.title}」？此操作無法復原。`)) return;
       deleteTrip(meta.id);
-      if (meta.id === activeId) {
-        loadCurrentTrip();
-      }
+      loadCurrentTrip();
       renderTripManager();
       showToast('已刪除');
     };
