@@ -217,7 +217,12 @@ body[data-view="manage-view"] #day-tabs {
 
 .view { display: none; }
 .view.active { display: block; }
-#map-view.active { display: flex; flex-direction: column; }
+#map-view.active { display: flex; flex-direction: column; height: 100%; }
+
+/* Remove bottom padding on map view (no need for bottom nav space) */
+body[data-view="map-view"] #main {
+  padding-bottom: 0;
+}
 
 /* ── Stop List ────────────────────────────────────────────────── */
 #stop-list {
