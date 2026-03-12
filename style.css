@@ -112,6 +112,7 @@ body {
 }
 
 #trip-selector::-webkit-scrollbar { display: none; }
+#trip-selector[hidden] { display: none; }
 
 .trip-pill {
   flex-shrink: 0;
