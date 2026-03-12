@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'trip-v10';
+const CACHE_VERSION = 'trip-v11';
 const APP_SHELL = [
   'index.html',
   'style.css',
@@ -6,7 +6,6 @@ const APP_SHELL = [
   'map.js',
   'trips.js',
   'manifest.json',
-  'data/itinerary.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
 ];
