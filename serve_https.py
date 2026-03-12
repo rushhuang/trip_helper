@@ -5,11 +5,21 @@ Usage: python3 serve_https.py
 Then open https://localhost:8443 in browser (accept the self-signed cert warning).
 """
 import http.server
-import ssl
 import os
+import socket
+import ssl
 import sys
 
-PORT = 8443
+def find_free_port(start: int) -> int:
+    port = start
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('localhost', port)) != 0:
+                return port
+        print(f'  ⚠ Port {port} 已被佔用，嘗試 {port + 1}…')
+        port += 1
+
+PORT = find_free_port(int(os.environ.get('HTTPS_PORT', 8443)))
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pwa')
 
 # Generate cert if not exists
