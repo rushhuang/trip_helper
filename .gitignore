@@ -1,0 +1,4 @@
+# Private trip data (import via PWA UI)
+pwa/data/itinerary.json
+*.xlsx
+original_file/
