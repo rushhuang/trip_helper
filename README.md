@@ -36,33 +36,41 @@ trip_helper/
 
 ## 快速開始
 
-### 本地測試
+### 互動式部署選單
 
 ```bash
-# HTTP（行程查詢功能完整可用）
+./deploy.sh
+```
+
+```
+╔══════════════════════════════════════╗
+║     行程查詢 PWA — 部署選單          ║
+╚══════════════════════════════════════╝
+
+── 本地部署 ─────────────────────────────
+  1) HTTP       http://localhost:8080   （快速測試）
+  2) HTTPS      https://localhost:8443  （PWA 完整功能）
+  3) HTTPS + Android  adb 轉發到手機    （本機安裝）
+
+── 遠端部署 （即將支援）─────────────────
+  4) GitHub Pages   git subtree push
+  5) Netlify        CLI 一鍵部署
+  6) GitHub Release 打包 ZIP 上傳
+```
+
+### 手動啟動
+
+```bash
+# HTTP（快速測試）
 python3 -m http.server 8080 --directory pwa/
-# 瀏覽器開啟 http://localhost:8080
+
+# HTTPS（PWA 完整功能，含 Service Worker）
+python3 serve_https.py
+
+# Android 手機安裝（需先執行 HTTPS 伺服器）
+adb reverse tcp:8443 tcp:8443
+# 手機 Chrome 開啟 https://localhost:8443，點「加入主畫面」
 ```
-
-### 手機本地安裝（Android + USB）
-
-```bash
-# 啟動本地伺服器
-python3 -m http.server 8080 --directory pwa/
-
-# 將手機 port 轉發到電腦
-adb reverse tcp:8080 tcp:8080
-
-# 手機 Chrome 開啟 http://localhost:8080，點「加入主畫面」
-```
-
-### 部署到 GitHub Pages
-
-```bash
-git subtree push --prefix pwa origin gh-pages
-```
-
-或將 `pwa/` 資料夾拖拉到 [Netlify Drop](https://app.netlify.com/drop)。
 
 ## 新增旅遊行程
 
