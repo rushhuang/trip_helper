@@ -1,0 +1,38 @@
+{
+  "name": "行程查詢",
+  "short_name": "行程查詢",
+  "description": "離線行程查詢 App — 支援多行程管理、匯入匯出、地圖路線、一鍵導航",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#1e90ff",
+  "orientation": "portrait",
+  "id": "trip-planner-pwa",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
