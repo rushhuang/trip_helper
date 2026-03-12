@@ -25,6 +25,11 @@ window.addEventListener('itinerary-loaded', e => {
 });
 
 window.addEventListener('map-activate', () => {
+  // Pick up data if we missed the itinerary-loaded event (module load order race)
+  if (!data && window.__itineraryData) {
+    data = window.__itineraryData;
+    buildChips();
+  }
   if (!map) initMap();
   setTimeout(() => map.invalidateSize(), 100);
 });
