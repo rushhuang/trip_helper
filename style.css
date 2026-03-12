@@ -217,11 +217,17 @@ body[data-view="manage-view"] #day-tabs {
 
 .view { display: none; }
 .view.active { display: block; }
-#map-view.active { display: flex; flex-direction: column; height: 100%; }
+#map-view.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
-/* Remove bottom padding on map view (no need for bottom nav space) */
+/* Map view: fill full screen, hide bottom nav */
 body[data-view="map-view"] #main {
   padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+body[data-view="map-view"] #bottom-nav {
+  display: none;
 }
 
 /* ── Stop List ────────────────────────────────────────────────── */
@@ -475,7 +481,7 @@ body[data-view="map-view"] #main {
 
 #map-container {
   flex: 1;
-  min-height: 300px;
+  min-height: 0;
   z-index: 1;
 }
 
