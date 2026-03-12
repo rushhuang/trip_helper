@@ -47,17 +47,52 @@ function loadCurrentTrip() {
     document.getElementById('day-tabs').innerHTML = '';
     document.getElementById('stop-list').innerHTML =
       '<div class="no-results">尚無行程，請至「行程管理」匯入 JSON</div>';
+    renderTripSelector();
     return;
   }
 
   document.getElementById('header').querySelector('h1').textContent =
     data.trip?.title || '行程查詢';
+  renderTripSelector();
   renderDayTabs();
   jumpToToday();
   renderStops();
 
   // Notify map
   window.dispatchEvent(new CustomEvent('itinerary-loaded', { detail: data }));
+}
+
+// ── Trip Selector (multi-trip pill bar) ───────────────────────
+function renderTripSelector() {
+  const container = document.getElementById('trip-selector');
+  const trips = listTrips();
+
+  if (trips.length < 2) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  container.innerHTML = '';
+  const activeId = getActiveTripId();
+
+  trips.forEach(meta => {
+    const pill = document.createElement('button');
+    pill.className = 'trip-pill' + (meta.id === activeId ? ' active' : '');
+    pill.textContent = meta.title;
+    pill.onclick = () => {
+      if (meta.id === activeId) return;
+      setActiveTrip(meta.id);
+      loadCurrentTrip();
+      renderTripManager();
+      showToast(`已切換至「${meta.title}」`);
+    };
+    container.appendChild(pill);
+  });
+
+  // Scroll active pill into view
+  const activePill = container.querySelector('.trip-pill.active');
+  activePill?.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 
 // ── Day Tabs ─────────────────────────────────────────────────────
@@ -275,33 +310,34 @@ function setupSearch() {
   };
 }
 
-// ── Bottom Navigation ────────────────────────────────────────────
+// ── Navigation (bottom nav + desktop nav) ────────────────────────
+function switchView(target) {
+  document.querySelectorAll('.nav-btn, .desktop-nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === target);
+  });
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(target).classList.add('active');
+
+  if (target === 'map-view') {
+    window.dispatchEvent(new Event('map-activate'));
+  }
+  if (target === 'manage-view') {
+    renderTripManager();
+  }
+}
+
 function setupNav() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.onclick = () => {
-      const target = btn.dataset.view;
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      document.getElementById(target).classList.add('active');
-
-      if (target === 'map-view') {
-        window.dispatchEvent(new Event('map-activate'));
-      }
-      if (target === 'manage-view') {
-        renderTripManager();
-      }
-    };
+    btn.onclick = () => switchView(btn.dataset.view);
+  });
+  document.querySelectorAll('.desktop-nav-btn').forEach(btn => {
+    btn.onclick = () => switchView(btn.dataset.view);
   });
 }
 
 // ── Scroll to Card (from map) ────────────────────────────────────
 window.scrollToStop = function(stopId, dayDate) {
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.view === 'list-view');
-  });
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('list-view').classList.add('active');
+  switchView('list-view');
   selectDay(dayDate);
   requestAnimationFrame(() => {
     const card = document.getElementById(`card-${stopId}`);
