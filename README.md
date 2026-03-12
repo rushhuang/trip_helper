@@ -59,8 +59,8 @@ trip_helper/
   5) HTTPS       https://localhost:8443  （PWA 完整功能）
   6) HTTPS + Android  adb 轉發到手機     （本機安裝）
 
-   遠端（即將支援）
-  7) GitHub Pages   git subtree push
+   遠端
+  7) GitHub Pages   gh-pages 分支部署
   8) Netlify        CLI 一鍵部署
   9) GitHub Release 打包 ZIP 上傳
 ```

@@ -35,14 +35,14 @@ print_menu() {
     echo "  5) HTTPS       https://localhost:8443  （PWA 完整功能）"
     echo "  6) HTTPS + Android  adb 轉發到手機     （本機安裝）"
     echo ""
-    echo -e "${DIM}   遠端（即將支援）${RESET}"
-    echo -e "${DIM}  7) GitHub Pages   git subtree push${RESET}"
-    echo -e "${DIM}  8) Netlify        CLI 一鍵部署${RESET}"
-    echo -e "${DIM}  9) GitHub Release 打包 ZIP 上傳${RESET}"
+    echo -e "${CYAN}   遠端${RESET}"
+    echo "  7) GitHub Pages   gh-pages 分支部署"
+    echo "  8) Netlify        CLI 一鍵部署"
+    echo "  9) GitHub Release 打包 ZIP 上傳"
     echo ""
     echo "  q) 離開"
     echo ""
-    echo -n "請輸入選項 [1-6, q]： "
+    echo -n "請輸入選項 [1-9, q]： "
 }
 
 # ── 工具：找可用 port ────────────────────────────────────────────────────
@@ -166,22 +166,148 @@ serve_android() {
     python3 "$ROOT/serve_https.py"
 }
 
-# ── 預留：遠端部署 ───────────────────────────────────────────────────────
+# ── 7) GitHub Pages ──────────────────────────────────────────────────────
 deploy_gh_pages() {
-    # TODO: git subtree push --prefix pwa origin gh-pages
-    echo -e "${YELLOW}⚠ GitHub Pages 部署尚未實作${RESET}"
+    echo -e "\n${GREEN}▶ 部署到 GitHub Pages${RESET}"
+
+    if ! command -v gh &>/dev/null; then
+        echo -e "${RED}✗ 找不到 gh CLI，請先安裝：brew install gh${RESET}"
+        read -rp $'\n按 Enter 返回選單…'
+        return
+    fi
+
+    # Check for uncommitted changes in pwa/
+    if ! git diff --quiet HEAD -- pwa/; then
+        echo -e "${YELLOW}⚠ pwa/ 有未提交的變更，請先 commit${RESET}"
+        read -rp $'\n按 Enter 返回選單…'
+        return
+    fi
+
+    # Check remote
+    local remote_url
+    remote_url=$(git remote get-url origin 2>/dev/null || true)
+    if [[ -z "$remote_url" ]]; then
+        echo -e "${RED}✗ 找不到 origin remote，請先設定：git remote add origin <url>${RESET}"
+        read -rp $'\n按 Enter 返回選單…'
+        return
+    fi
+
+    echo -e "  Remote: ${BOLD}${remote_url}${RESET}"
+    echo -e "  分支：  ${BOLD}gh-pages${RESET}"
+    echo -e "  內容：  ${BOLD}pwa/${RESET}（不含私人資料）\n"
+
+    # Use subtree split + force push for reliability
+    echo -e "${DIM}  建立 gh-pages 分支…${RESET}"
+    git subtree split --prefix pwa -b gh-pages 2>/dev/null || {
+        # Branch exists, recreate
+        git branch -D gh-pages 2>/dev/null
+        git subtree split --prefix pwa -b gh-pages
+    }
+
+    echo -e "${DIM}  推送至 origin/gh-pages…${RESET}"
+    git push origin gh-pages --force
+
+    # Enable GitHub Pages via API
+    local repo_name
+    repo_name=$(echo "$remote_url" | sed -E 's#.*[:/]##; s#\.git$##')
+    echo -e "${DIM}  設定 GitHub Pages（gh-pages 分支 / root）…${RESET}"
+    gh api "repos/${repo_name}/pages" \
+        --method POST \
+        -f "source[branch]=gh-pages" \
+        -f "source[path]=/" 2>/dev/null || \
+    gh api "repos/${repo_name}/pages" \
+        --method PUT \
+        -f "source[branch]=gh-pages" \
+        -f "source[path]=/" 2>/dev/null || true
+
+    local pages_url="https://$(echo "$repo_name" | cut -d/ -f1).github.io/$(echo "$repo_name" | cut -d/ -f2)/"
+    echo -e "\n${GREEN}  ✓ 部署完成！${RESET}"
+    echo -e "  URL: ${BOLD}${pages_url}${RESET}"
+    echo -e "${DIM}  （首次部署可能需要幾分鐘才能生效）${RESET}"
     read -rp $'\n按 Enter 返回選單…'
 }
 
+# ── 8) Netlify ───────────────────────────────────────────────────────────
 deploy_netlify() {
-    # TODO: netlify deploy --prod --dir pwa
-    echo -e "${YELLOW}⚠ Netlify 部署尚未實作${RESET}"
+    echo -e "\n${GREEN}▶ 部署到 Netlify${RESET}"
+
+    if ! command -v netlify &>/dev/null; then
+        echo -e "${RED}✗ 找不到 netlify CLI${RESET}"
+        echo "  安裝：npm install -g netlify-cli"
+        echo "  登入：netlify login"
+        read -rp $'\n按 Enter 返回選單…'
+        return
+    fi
+
+    # Create a clean temp directory (only git-tracked files)
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    echo -e "  建立部署目錄（排除私人資料）…"
+    git archive HEAD:pwa | tar -x -C "$tmpdir"
+
+    echo -e "  部署目錄：${BOLD}${tmpdir}${RESET}"
+    echo -e "  內容：pwa/（僅 git 追蹤的檔案）\n"
+
+    echo -e "${DIM}  執行 netlify deploy --prod …${RESET}\n"
+    netlify deploy --prod --dir "$tmpdir"
+
+    rm -rf "$tmpdir"
+    echo -e "\n${GREEN}  ✓ 部署完成！${RESET}"
     read -rp $'\n按 Enter 返回選單…'
 }
 
+# ── 9) GitHub Release ────────────────────────────────────────────────────
 deploy_release() {
-    # TODO: zip -r trip_helper_pwa.zip pwa/ && gh release create ...
-    echo -e "${YELLOW}⚠ GitHub Release 部署尚未實作${RESET}"
+    echo -e "\n${GREEN}▶ 打包 ZIP 並建立 GitHub Release${RESET}"
+
+    if ! command -v gh &>/dev/null; then
+        echo -e "${RED}✗ 找不到 gh CLI，請先安裝：brew install gh${RESET}"
+        read -rp $'\n按 Enter 返回選單…'
+        return
+    fi
+
+    # Determine version tag
+    local latest_tag
+    latest_tag=$(git tag --sort=-v:refname | head -1 || true)
+    local suggested="v1.0.0"
+    if [[ -n "$latest_tag" ]]; then
+        # Auto-increment patch version
+        local base="${latest_tag#v}"
+        local major minor patch
+        IFS='.' read -r major minor patch <<< "$base"
+        suggested="v${major}.${minor}.$((patch + 1))"
+    fi
+
+    echo -n "  版本標籤 [${suggested}]： "
+    read -r tag
+    tag="${tag:-$suggested}"
+
+    # Create zip from git archive (only tracked files, no private data)
+    local zip_name="trip_helper_pwa_${tag}.zip"
+    local zip_path="$ROOT/${zip_name}"
+    echo -e "\n  打包 ${BOLD}${zip_name}${RESET}（僅 git 追蹤的檔案）…"
+    git archive HEAD:pwa --prefix=pwa/ --format=zip -o "$zip_path"
+
+    echo -e "  大小：$(du -h "$zip_path" | cut -f1)"
+
+    # Create tag and release
+    echo -e "\n${DIM}  建立 tag: ${tag}…${RESET}"
+    git tag "$tag" 2>/dev/null || {
+        echo -e "${YELLOW}  Tag ${tag} 已存在，覆蓋${RESET}"
+        git tag -d "$tag" >/dev/null
+        git tag "$tag"
+    }
+    git push origin "$tag" --force
+
+    echo -e "${DIM}  建立 GitHub Release…${RESET}"
+    gh release create "$tag" "$zip_path" \
+        --title "行程查詢 PWA ${tag}" \
+        --notes "行程查詢 PWA 離線版，解壓後用瀏覽器開啟 pwa/index.html 或部署至任意靜態伺服器。" \
+        --latest
+
+    rm -f "$zip_path"
+    echo -e "\n${GREEN}  ✓ Release 建立完成！${RESET}"
+    echo -e "  $(gh release view "$tag" --json url -q .url)"
     read -rp $'\n按 Enter 返回選單…'
 }
 
