@@ -68,7 +68,29 @@ git subtree push --prefix pwa origin gh-pages
 
 ### 方法一：從 Excel 轉換
 
-1. 準備旅遊行程 Excel 檔（參考欄位格式：日期、時間、地點名稱、資訊五段式、備注）
+完整範例檔：[`example/example.xlsx`](example/example.xlsx)、[`example/example.json`](example/example.json)
+
+#### Excel 欄位格式
+
+| 欄 | 內容 | 說明 |
+|----|------|------|
+| A | 日期 | `4/1(二)` 格式，同一天後續列可留空 |
+| B | 時間 | `14:30` 格式 |
+| C | 地點名稱 | 景點／餐廳／飯店名稱 |
+| D | 五段式資訊 | 多行文字，格式如下 |
+| E | 備注 | 自由填寫 |
+
+**D 欄格式**（每段一行，缺少的欄位可省略或留空）：
+
+```
+Mapcode：33 095 245*87
+地址：〒901-0155 沖縄県那覇市金城５丁目4-6
+電話：098-857-5577
+營業時間：11:00-23:30
+🅿 餐廳底下及隔壁賣場有停車位
+```
+
+1. 準備旅遊行程 Excel 檔（參考上方格式，或直接複製 `example/example.xlsx`）
 
 2. 安裝依賴套件：
    ```bash
@@ -90,7 +112,7 @@ git subtree push --prefix pwa origin gh-pages
 
 ### 方法二：手動編寫 JSON
 
-參考以下格式建立 JSON 檔，再於 PWA 匯入：
+參考以下格式建立 JSON 檔（或直接修改 [`example/example.json`](example/example.json)），再於 PWA 匯入：
 
 ```jsonc
 {
