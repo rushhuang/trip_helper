@@ -40,26 +40,28 @@ trip_helper/
 
 ## 快速開始
 
-### 互動式部署選單
+### 互動式工具選單
 
 ```bash
 ./deploy.sh
 ```
 
 ```
-╔══════════════════════════════════════╗
-║     行程查詢 PWA — 部署選單          ║
-╚══════════════════════════════════════╝
+── 轉換 ──────────────────────────────────
+  1) xlsx → JSON    Excel 轉行程資料
+  2) 地理編碼        補上座標（需網路）
+  3) 完整流程        xlsx → JSON → 地理編碼
 
-── 本地部署 ─────────────────────────────
-  1) HTTP       http://localhost:8080   （快速測試）
-  2) HTTPS      https://localhost:8443  （PWA 完整功能）
-  3) HTTPS + Android  adb 轉發到手機    （本機安裝）
+── 部署 ──────────────────────────────────
+   本地
+  4) HTTP        http://localhost:8080   （快速測試）
+  5) HTTPS       https://localhost:8443  （PWA 完整功能）
+  6) HTTPS + Android  adb 轉發到手機     （本機安裝）
 
-── 遠端部署 （即將支援）─────────────────
-  4) GitHub Pages   git subtree push
-  5) Netlify        CLI 一鍵部署
-  6) GitHub Release 打包 ZIP 上傳
+   遠端（即將支援）
+  7) GitHub Pages   git subtree push
+  8) Netlify        CLI 一鍵部署
+  9) GitHub Release 打包 ZIP 上傳
 ```
 
 ### 手動啟動
