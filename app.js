@@ -144,11 +144,11 @@ function renderStops() {
   }
   container.innerHTML = '';
   dayData.stops.forEach((stop, i) => {
-    container.appendChild(createStopCard(stop, i + 1, dayData.color));
+    container.appendChild(createStopCard(stop, i + 1, dayData.color, dayData.date));
   });
 }
 
-function createStopCard(stop, num, color) {
+function createStopCard(stop, num, color, dayDate) {
   const card = document.createElement('div');
   card.className = 'stop-card';
   card.id = `card-${stop.id}`;
@@ -212,10 +212,22 @@ function createStopCard(stop, num, color) {
   if (hasPhone) btnCall.onclick = () => { location.href = `tel:${stop.phone}`; };
   actionsDiv.appendChild(btnCall);
 
+  const btnMap = makeActionBtn('\u{1F4CD}', '地圖', !stop.lat || !stop.lng);
+  if (stop.lat && stop.lng) btnMap.onclick = () => showOnMap(stop.id, dayDate);
+  actionsDiv.appendChild(btnMap);
+
   detail.appendChild(actionsDiv);
   card.appendChild(header);
   card.appendChild(detail);
   return card;
+}
+
+/** Jump from list to map: focus a specific stop */
+function showOnMap(stopId, dayDate) {
+  switchView('map-view');
+  window.dispatchEvent(new CustomEvent('map-focus-stop', {
+    detail: { stopId, dayDate },
+  }));
 }
 
 function makeActionBtn(icon, label, disabled) {
@@ -293,7 +305,7 @@ function setupSearch() {
 
       matches.forEach(stop => {
         const idx = day.stops.indexOf(stop) + 1;
-        container.appendChild(createStopCard(stop, idx, day.color));
+        container.appendChild(createStopCard(stop, idx, day.color, day.date));
         found++;
       });
     });

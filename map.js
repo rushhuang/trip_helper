@@ -4,6 +4,7 @@ let data = null;
 let layers = {};       // { '3/19': { markers: L.layerGroup, polyline: L.polyline } }
 let activeChips = {};  // { '3/19': true/false }
 let allMarkerBounds = null;
+let markerIndex = {};  // { 'stop_001': { marker, day } }
 
 // ── Wait for data (also handles trip switching) ──────────────────
 window.addEventListener('itinerary-loaded', e => {
@@ -17,6 +18,7 @@ window.addEventListener('itinerary-loaded', e => {
   }
   layers = {};
   activeChips = {};
+  markerIndex = {};
   buildChips();
   if (map) {
     buildLayers();
@@ -82,6 +84,7 @@ function buildLayers() {
         .bindPopup(createPopupContent(stop, stopNum, day), { maxWidth: 260 });
 
       marker.on('click', () => showSummary(stop, stopNum, day));
+      markerIndex[stop.id] = { marker, day, stopNum };
 
       // Long press → navigate
       let pressTimer = null;
@@ -264,3 +267,29 @@ function fitToday() {
   updateChips();
   updateMapLayers();
 }
+
+// ── Focus stop from list view ───────────────────────────────────
+window.addEventListener('map-focus-stop', e => {
+  const { stopId, dayDate } = e.detail;
+  if (!data || !map) return;
+
+  const entry = markerIndex[stopId];
+  if (!entry) return;
+
+  // Show only that day
+  data.days.forEach(d => {
+    activeChips[d.date] = d.date === dayDate;
+  });
+  updateChips();
+  updateMapLayers();
+
+  // Zoom and open popup
+  const latlng = entry.marker.getLatLng();
+  map.setView(latlng, 15, { animate: true });
+  entry.marker.openPopup();
+  showSummary(
+    data.days.find(d => d.date === dayDate)?.stops.find(s => s.id === stopId),
+    entry.stopNum,
+    entry.day,
+  );
+});
