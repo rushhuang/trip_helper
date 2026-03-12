@@ -1074,6 +1074,45 @@ body[data-view="map-view"] #main {
   background: var(--bg-card);
 }
 
+/* ── Travel Indicator ──────────────────────────────────────────── */
+.travel-indicator {
+  text-align: center;
+  padding: 4px 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.stop-duration {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+/* ── Add Stop Button ───────────────────────────────────────────── */
+.add-stop-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.add-stop-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Danger Action Button ─────────────────────────────────────── */
+.action-btn.danger {
+  color: #e74c3c;
+}
+.action-btn.danger:hover { background: rgba(231,76,60,.1); }
+
 .drag-insertion-line {
   position: absolute;
   left: 8px;

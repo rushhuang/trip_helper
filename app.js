@@ -144,8 +144,35 @@ function renderStops() {
   }
   container.innerHTML = '';
   dayData.stops.forEach((stop, i) => {
+    // Travel time indicator between cards
+    if (i > 0 && stop.travelTime) {
+      const travel = document.createElement('div');
+      travel.className = 'travel-indicator';
+      travel.textContent = `\u{1F697} ${stop.travelTime} min`;
+      container.appendChild(travel);
+    }
     container.appendChild(createStopCard(stop, i + 1, dayData.color, dayData.date));
   });
+
+  // Add stop button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-stop-btn';
+  addBtn.textContent = '+ 新增站點';
+  addBtn.onclick = () => {
+    const newStop = {
+      id: generateStopId(),
+      time: '', type: 'sight', name: '',
+      mapcode: '', address: '', phone: '',
+      hours: '', parking: '', note: '',
+      lat: null, lng: null,
+      duration: null, travelTime: null,
+    };
+    dayData.stops.push(newStop);
+    persistAndSync();
+    renderStops();
+    openEditModal(newStop, dayData.date);
+  };
+  container.appendChild(addBtn);
 }
 
 function createStopCard(stop, num, color, dayDate) {
@@ -155,6 +182,7 @@ function createStopCard(stop, num, color, dayDate) {
 
   const icon = TYPE_ICON[stop.type] || '\u{1F4CD}';
   const timeText = stop.time || '';
+  const durText = stop.duration ? `${stop.duration >= 60 ? Math.floor(stop.duration / 60) + 'h' : ''}${stop.duration % 60 ? stop.duration % 60 + 'min' : ''}` : '';
 
   const header = document.createElement('div');
   header.className = 'stop-header';
@@ -163,7 +191,7 @@ function createStopCard(stop, num, color, dayDate) {
     <span class="stop-icon">${icon}</span>
     <div class="stop-info">
       <div class="stop-name">${esc(stop.name)}</div>
-      ${timeText ? `<div class="stop-time">${esc(timeText)}</div>` : ''}
+      ${timeText || durText ? `<div class="stop-time">${esc(timeText)}${timeText && durText ? ' · ' : ''}${durText ? '<span class="stop-duration">' + durText + '</span>' : ''}</div>` : ''}
     </div>
     <span class="stop-chevron">&#x276F;</span>
   `;
@@ -223,6 +251,18 @@ function createStopCard(stop, num, color, dayDate) {
   const btnMove = makeActionBtn('\u{27A1}\u{FE0F}', '移至...', false);
   btnMove.onclick = () => openDayPicker(stop, dayDate, 'move');
   actionsDiv.appendChild(btnMove);
+
+  const btnDelete = makeActionBtn('\u{1F5D1}', '刪除', false);
+  btnDelete.classList.add('danger');
+  btnDelete.onclick = () => {
+    if (!confirm(`確定刪除「${stop.name || '未命名'}」？`)) return;
+    const day = data.days.find(d => d.date === dayDate);
+    if (day) day.stops = day.stops.filter(s => s.id !== stop.id);
+    persistAndSync();
+    renderStops();
+    showToast('已刪除');
+  };
+  actionsDiv.appendChild(btnDelete);
 
   detail.appendChild(actionsDiv);
 
@@ -302,6 +342,39 @@ function persistAndSync() {
 
 function generateStopId() {
   return 'stop_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/** Auto-recalculate stop times for a day based on duration + travelTime. */
+function recalcTimes(dayDate) {
+  if (!data) return;
+  const day = data.days.find(d => d.date === dayDate);
+  if (!day || !day.stops.length) return;
+
+  // Start from the first stop's time
+  const first = day.stops[0];
+  if (!first.time) return;
+
+  const parts = first.time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!parts) return;
+
+  let mins = parseInt(parts[1]) * 60 + parseInt(parts[2]);
+
+  for (let i = 1; i < day.stops.length; i++) {
+    const prev = day.stops[i - 1];
+    const curr = day.stops[i];
+
+    // Add previous stop's duration
+    if (prev.duration) mins += prev.duration;
+    // Add current stop's travel time
+    if (curr.travelTime) mins += curr.travelTime;
+
+    // Skip if manually fixed (has _fixedTime flag)
+    if (curr._fixedTime) continue;
+
+    const h = Math.floor(mins / 60) % 24;
+    const m = mins % 60;
+    curr.time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
 }
 
 // ── Search ───────────────────────────────────────────────────────
@@ -413,6 +486,8 @@ const EDIT_FIELDS = [
   { key: 'hours',   label: '營業時間', type: 'text' },
   { key: 'parking', label: '停車',     type: 'text' },
   { key: 'note',    label: '備注',     type: 'textarea' },
+  { key: 'duration',   label: '預估停留（分鐘）', type: 'number', step: '1', placeholder: '60' },
+  { key: 'travelTime', label: '交通時間（分鐘）', type: 'number', step: '1', placeholder: '20' },
   { key: 'lat',     label: '緯度',     type: 'number', step: '0.000001' },
   { key: 'lng',     label: '經度',     type: 'number', step: '0.000001' },
 ];
@@ -449,6 +524,7 @@ function openEditModal(stop, dayDate) {
   document.getElementById('edit-form').onsubmit = e => {
     e.preventDefault();
     const fd = new FormData(e.target);
+    const oldTime = stop.time;
     EDIT_FIELDS.forEach(f => {
       let val = fd.get(f.key);
       if (f.type === 'number') {
@@ -456,6 +532,10 @@ function openEditModal(stop, dayDate) {
       }
       stop[f.key] = val;
     });
+    // Mark as manually fixed if user changed time
+    if (stop.time && stop.time !== oldTime) {
+      stop._fixedTime = true;
+    }
     persistAndSync();
     renderStops();
     modal.hidden = true;
@@ -505,12 +585,15 @@ function openDayPicker(stop, sourceDayDate, mode) {
       if (mode === 'move') {
         sourceDay.stops = sourceDay.stops.filter(s => s.id !== stop.id);
         targetDay.stops.push(stop);
+        recalcTimes(sourceDayDate);
+        recalcTimes(targetDate);
         persistAndSync();
         renderStops();
         showToast(`已移至 ${targetDay.label}`);
       } else {
         const clone = { ...stop, id: generateStopId() };
         targetDay.stops.push(clone);
+        recalcTimes(targetDate);
         persistAndSync();
         showToast(`已複製到 ${targetDay.label}`);
       }
@@ -642,6 +725,7 @@ function setupDragReorder() {
       const [moved] = dayData.stops.splice(dragIdx, 1);
       const target = insertIdx > dragIdx ? insertIdx - 1 : insertIdx;
       dayData.stops.splice(target, 0, moved);
+      recalcTimes(activeDay);
       persistAndSync();
       renderStops();
     }
