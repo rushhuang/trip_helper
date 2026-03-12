@@ -97,6 +97,40 @@ def parse_d_column(text: str) -> dict:
         'parking': _extract(r'🅿[️]?[ \t]*([^\n]+)', t),
     }
 
+# ── 停留時間 / 交通時間 解析 ──────────────────────────────────────────
+def parse_duration(text: str) -> int | None:
+    """從文字中擷取停留時間（分鐘）。"""
+    if not text:
+        return None
+    # 「停留約1.5小時」「停留約1.5hr」「停留1小時」「停留約40分鐘」
+    m = re.search(r'停留[約]?\s*([\d.]+)\s*(小時|hr|h|時間)', text, re.IGNORECASE)
+    if m:
+        return round(float(m.group(1)) * 60)
+    m = re.search(r'停留[約]?\s*([\d.]+)\s*(分鐘|分|min)', text, re.IGNORECASE)
+    if m:
+        return round(float(m.group(1)))
+    # 「停留+吃約1.5hr」
+    m = re.search(r'停留.*?([\d.]+)\s*(小時|hr|h|時間)', text, re.IGNORECASE)
+    if m:
+        return round(float(m.group(1)) * 60)
+    m = re.search(r'停留.*?([\d.]+)\s*(分鐘|分|min)', text, re.IGNORECASE)
+    if m:
+        return round(float(m.group(1)))
+    return None
+
+def parse_travel_time(text: str) -> int | None:
+    """從文字中擷取交通時間（分鐘）。"""
+    if not text:
+        return None
+    # 「開車過來約20分鐘」「開車過來10分鐘」「距離XX約20分鐘」「過來約1小時」
+    m = re.search(r'(?:開車|車程|過來|距離\S*)[約]?\s*([\d.]+)\s*(小時|hr|h|時間)', text, re.IGNORECASE)
+    if m:
+        return round(float(m.group(1)) * 60)
+    m = re.search(r'(?:開車|車程|過來|距離\S*)[約]?\s*([\d.]+)\s*(分鐘|分|min)', text, re.IGNORECASE)
+    if m:
+        return round(float(m.group(1)))
+    return None
+
 # ── 時間格式化 ────────────────────────────────────────────────────────
 def fmt_time(val) -> str:
     if val is None:
@@ -156,22 +190,30 @@ def main():
 
         info   = parse_d_column(col_d)
         note   = str(col_e).strip() if col_e else ''
+        d_text = str(col_d).strip() if col_d else ''
         time_s = fmt_time(col_b)
+
+        # 從 D 欄 + E 欄合併文字中解析停留 / 交通時間
+        combined = d_text + '\n' + note
+        duration    = parse_duration(combined)
+        travel_time = parse_travel_time(combined)
 
         stop_counter += 1
         stop = {
-            'id':       f'stop_{stop_counter:03d}',
-            'time':     time_s,
-            'type':     detect_type(name),
-            'name':     name,
-            'mapcode':  info.get('mapcode', ''),
-            'address':  info.get('address', ''),
-            'phone':    info.get('phone',   ''),
-            'hours':    info.get('hours',   ''),
-            'parking':  info.get('parking', ''),
-            'note':     note,
-            'lat':      None,
-            'lng':      None,
+            'id':         f'stop_{stop_counter:03d}',
+            'time':       time_s,
+            'type':       detect_type(name),
+            'name':       name,
+            'mapcode':    info.get('mapcode', ''),
+            'address':    info.get('address', ''),
+            'phone':      info.get('phone',   ''),
+            'hours':      info.get('hours',   ''),
+            'parking':    info.get('parking', ''),
+            'note':       note,
+            'lat':        None,
+            'lng':        None,
+            'duration':   duration,
+            'travelTime': travel_time,
         }
 
         days_dict.setdefault(current_date, []).append(stop)
@@ -214,6 +256,19 @@ def main():
         print(f'\n⚠️  以下 {len(no_addr)} 個地點缺少地址（geocode 將跳過）：')
         for label, name in no_addr:
             print(f'   [{label}] {name}')
+
+    # ── 時間統計 ──
+    print(f'\n⏱  時間統計：')
+    for d in days:
+        dur_total = sum(s.get('duration') or 0 for s in d['stops'])
+        trv_total = sum(s.get('travelTime') or 0 for s in d['stops'])
+        dur_count = sum(1 for s in d['stops'] if s.get('duration'))
+        trv_count = sum(1 for s in d['stops'] if s.get('travelTime'))
+        total_min = dur_total + trv_total
+        print(f'   {d["label"]}：'
+              f'停留 {dur_total}min（{dur_count}站）+ '
+              f'交通 {trv_total}min（{trv_count}站）= '
+              f'{total_min // 60}h{total_min % 60:02d}m')
 
 if __name__ == '__main__':
     main()
