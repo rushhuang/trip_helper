@@ -25,24 +25,25 @@ print_menu() {
     echo -e "${BOLD}╚══════════════════════════════════════╝${RESET}"
     echo ""
     echo -e "${MAGENTA}── 轉換 ──────────────────────────────────${RESET}"
-    echo "  1) xlsx → JSON    Excel 轉行程資料"
-    echo "  2) 地理編碼        補上座標（需網路）"
-    echo "  3) 完整流程        xlsx → JSON → 地理編碼"
+    echo "  1) xlsx → JSON     Excel 轉行程資料"
+    echo "  2) 地理編碼         補上座標（需網路）"
+    echo "  3) MapCode 查詢    補上 MapCode（需網路+座標）"
+    echo "  4) 完整流程         xlsx → JSON → 地理編碼 → MapCode"
     echo ""
     echo -e "${CYAN}── 部署 ──────────────────────────────────${RESET}"
     echo -e "${CYAN}   本地${RESET}"
-    echo "  4) HTTP        http://localhost:8080   （快速測試）"
-    echo "  5) HTTPS       https://localhost:8443  （PWA 完整功能）"
-    echo "  6) HTTPS + Android  adb 轉發到手機     （本機安裝）"
+    echo "  5) HTTP             http://localhost:8080   （快速測試）"
+    echo "  6) HTTPS            https://localhost:8443  （PWA 完整功能）"
+    echo "  7) HTTPS + Android  adb 轉發到手機          （本機安裝）"
     echo ""
     echo -e "${CYAN}   遠端${RESET}"
-    echo "  7) GitHub Pages   gh-pages 分支部署"
-    echo "  8) Netlify        CLI 一鍵部署"
-    echo "  9) GitHub Release 打包 ZIP 上傳"
+    echo "  8) GitHub Pages     gh-pages 分支部署"
+    echo "  9) Netlify          CLI 一鍵部署"
+    echo "  0) GitHub Release   打包 ZIP 上傳"
     echo ""
     echo "  q) 離開"
     echo ""
-    echo -n "請輸入選項 [1-9, q]： "
+    echo -n "請輸入選項 [0-9, q]： "
 }
 
 # ── 工具：找可用 port ────────────────────────────────────────────────────
@@ -106,15 +107,39 @@ run_geocode() {
     read -rp $'\n按 Enter 返回選單…'
 }
 
-# ── 3) 完整流程 ───────────────────────────────────────────────────────────
+# ── 3) MapCode 查詢 ──────────────────────────────────────────────────────
+run_mapcode() {
+    echo -e "\n${GREEN}▶ MapCode 查詢（japanmapcode.com）${RESET}"
+
+    if ! check_pkg requests; then
+        echo -e "${YELLOW}  安裝 requests…${RESET}"
+        pip install requests
+    fi
+
+    local json_path="$PWA/data/itinerary.json"
+    if [[ ! -f "$json_path" ]]; then
+        echo -e "${RED}✗ 找不到 pwa/data/itinerary.json，請先執行選項 1${RESET}"
+        read -rp $'\n按 Enter 返回選單…'
+        return
+    fi
+
+    echo -e "${DIM}  需有座標（lat/lng）才能查詢，請先執行地理編碼${RESET}\n"
+    python3 "$SCRIPTS/mapcode.py"
+    echo -e "\n${GREEN}  ✓ MapCode 查詢完成${RESET}"
+    read -rp $'\n按 Enter 返回選單…'
+}
+
+# ── 4) 完整流程 ───────────────────────────────────────────────────────────
 convert_full() {
-    echo -e "\n${GREEN}▶ 完整流程：xlsx → JSON → 地理編碼${RESET}\n"
+    echo -e "\n${GREEN}▶ 完整流程：xlsx → JSON → 地理編碼 → MapCode${RESET}\n"
     convert_xlsx
     echo ""
     run_geocode
+    echo ""
+    run_mapcode
 }
 
-# ── 4) HTTP ──────────────────────────────────────────────────────────────
+# ── 5) HTTP ──────────────────────────────────────────────────────────────
 serve_http() {
     local port
     port=$(find_free_port "${HTTP_PORT:-8080}")
@@ -124,7 +149,7 @@ serve_http() {
     python3 -m http.server "$port" --directory "$PWA"
 }
 
-# ── 5) HTTPS ─────────────────────────────────────────────────────────────
+# ── 6) HTTPS ─────────────────────────────────────────────────────────────
 serve_https() {
     echo -e "\n${GREEN}▶ 啟動 HTTPS 伺服器${RESET}  →  https://localhost:8443"
     echo -e "${DIM}   （首次啟動會產生自簽憑證，瀏覽器需手動接受）${RESET}"
@@ -132,7 +157,7 @@ serve_https() {
     python3 "$ROOT/serve_https.py"
 }
 
-# ── 6) HTTPS + adb ───────────────────────────────────────────────────────
+# ── 7) HTTPS + adb ───────────────────────────────────────────────────────
 serve_android() {
     echo -e "\n${GREEN}▶ HTTPS + Android adb 轉發${RESET}"
 
@@ -166,7 +191,7 @@ serve_android() {
     python3 "$ROOT/serve_https.py"
 }
 
-# ── 7) GitHub Pages ──────────────────────────────────────────────────────
+# ── 8) GitHub Pages ──────────────────────────────────────────────────────
 deploy_gh_pages() {
     echo -e "\n${GREEN}▶ 部署到 GitHub Pages${RESET}"
 
@@ -227,7 +252,7 @@ deploy_gh_pages() {
     read -rp $'\n按 Enter 返回選單…'
 }
 
-# ── 8) Netlify ───────────────────────────────────────────────────────────
+# ── 9) Netlify ───────────────────────────────────────────────────────────
 deploy_netlify() {
     echo -e "\n${GREEN}▶ 部署到 Netlify${RESET}"
 
@@ -256,7 +281,7 @@ deploy_netlify() {
     read -rp $'\n按 Enter 返回選單…'
 }
 
-# ── 9) GitHub Release ────────────────────────────────────────────────────
+# ── 0) GitHub Release ────────────────────────────────────────────────────
 deploy_release() {
     echo -e "\n${GREEN}▶ 打包 ZIP 並建立 GitHub Release${RESET}"
 
@@ -319,13 +344,14 @@ main() {
         case "$choice" in
             1) convert_xlsx    ;;
             2) run_geocode     ;;
-            3) convert_full    ;;
-            4) serve_http      ;;
-            5) serve_https     ;;
-            6) serve_android   ;;
-            7) deploy_gh_pages ;;
-            8) deploy_netlify  ;;
-            9) deploy_release  ;;
+            3) run_mapcode     ;;
+            4) convert_full    ;;
+            5) serve_http      ;;
+            6) serve_https     ;;
+            7) serve_android   ;;
+            8) deploy_gh_pages ;;
+            9) deploy_netlify  ;;
+            0) deploy_release  ;;
             q|Q) echo -e "\n${DIM}Bye!${RESET}\n"; exit 0 ;;
             *) echo -e "${RED}無效選項${RESET}"; sleep 1 ;;
         esac

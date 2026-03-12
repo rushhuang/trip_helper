@@ -21,6 +21,7 @@ import requests
 
 JSON_PATH = os.path.join(os.path.dirname(__file__), '..', 'pwa', 'data', 'itinerary.json')
 NOMINATIM  = 'https://nominatim.openstreetmap.org/search'
+MAPCODE_API = 'https://japanmapcode.com/mapcode'
 USER_AGENT = 'okinawa-trip-pwa/1.0 (personal travel planning app)'
 
 # ── 地址預處理 ────────────────────────────────────────────────────────
@@ -72,11 +73,31 @@ def geocode(address: str) -> tuple[float | None, float | None]:
 
     return lat, lng
 
+# ── MapCode 查詢 ────────────────────────────────────────────────────
+def fetch_mapcode(lat: float, lng: float) -> str | None:
+    """從 japanmapcode.com 查詢 MapCode。"""
+    try:
+        r = requests.post(MAPCODE_API, data={'lat': str(lat), 'lng': str(lng)}, timeout=10)
+        r.raise_for_status()
+        result = r.text.strip()
+        if result and not result.startswith('{') and not result.startswith('<'):
+            return result
+        try:
+            data = r.json()
+            return data.get('mapcode', None)
+        except (ValueError, AttributeError):
+            pass
+    except requests.RequestException as e:
+        print(f'     ⚠️  MapCode 查詢錯誤: {e}')
+    return None
+
 # ── 主程式 ────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description='Geocode itinerary.json stops')
     parser.add_argument('--dry-run', action='store_true',
                         help='只列出待處理清單，不實際呼叫 API')
+    parser.add_argument('--no-mapcode', action='store_true',
+                        help='跳過 MapCode 查詢，只做地理編碼')
     args = parser.parse_args()
 
     with open(JSON_PATH, encoding='utf-8') as f:
@@ -118,8 +139,17 @@ def main():
         if lat is not None:
             stop['lat'] = round(lat, 6)
             stop['lng'] = round(lng, 6)
-            print(f'         ✅ ({stop["lat"]}, {stop["lng"]})\n')
+            print(f'         ✅ ({stop["lat"]}, {stop["lng"]})')
             updated += 1
+
+            # 順便查 MapCode
+            if not args.no_mapcode and not stop.get('mapcode'):
+                time.sleep(0.5)
+                mc = fetch_mapcode(stop['lat'], stop['lng'])
+                if mc:
+                    stop['mapcode'] = mc
+                    print(f'         🗺  MapCode: {mc}')
+            print()
         else:
             print(f'         ❌ 找不到座標\n')
             failed.append((day['label'], stop['name'], stop['address']))
@@ -138,6 +168,38 @@ def main():
         for label, name, addr in failed:
             print(f'   [{label}] {name}')
             print(f'            地址: {addr}')
+
+    # ── 第二輪：為已有座標但缺 MapCode 的站點補上 MapCode ──────────
+    if not args.no_mapcode:
+        mc_todo = [
+            (day, stop)
+            for day in data['days']
+            for stop in day['stops']
+            if stop.get('lat') is not None and not stop.get('mapcode')
+        ]
+        if mc_todo:
+            print(f'\n{"─"*50}')
+            print(f'🗺  補查 MapCode：{len(mc_todo)} 個地點\n')
+
+            if not args.dry_run:
+                mc_updated = 0
+                for j, (day, stop) in enumerate(mc_todo, 1):
+                    print(f'({j:02d}/{len(mc_todo):02d}) [{day["label"]}] {stop["name"]}')
+                    mc = fetch_mapcode(stop['lat'], stop['lng'])
+                    time.sleep(0.5)
+                    if mc:
+                        stop['mapcode'] = mc
+                        print(f'         ✅ {mc}\n')
+                        mc_updated += 1
+                    else:
+                        print(f'         ❌ 查詢失敗\n')
+                    if j % 5 == 0:
+                        _save(data)
+                _save(data)
+                print(f'✅ MapCode 補查完成：{mc_updated} 個')
+            else:
+                for day, stop in mc_todo:
+                    print(f'  [{day["label"]}] {stop["name"]}  ({stop["lat"]}, {stop["lng"]})')
 
 def _save(data: dict):
     with open(JSON_PATH, 'w', encoding='utf-8') as f:

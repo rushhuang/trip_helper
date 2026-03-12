@@ -30,7 +30,8 @@ trip_helper/
 │   └── icons/              PWA 圖示（192/512，any/maskable）
 ├── scripts/
 │   ├── xlsx_to_json.py     Excel → JSON 轉換腳本
-│   └── geocode.py          Nominatim 自動地理編碼腳本
+│   ├── geocode.py          Nominatim 地理編碼 + MapCode 查詢
+│   └── mapcode.py          MapCode 單獨查詢腳本
 ├── example/
 │   ├── example.xlsx        Excel 格式範例（3 天 6 站）
 │   └── example.json        itinerary.json 格式範例
@@ -49,20 +50,21 @@ trip_helper/
 
 ```
 ── 轉換 ──────────────────────────────────
-  1) xlsx → JSON    Excel 轉行程資料
-  2) 地理編碼        補上座標（需網路）
-  3) 完整流程        xlsx → JSON → 地理編碼
+  1) xlsx → JSON     Excel 轉行程資料
+  2) 地理編碼         補上座標（需網路）
+  3) MapCode 查詢    補上 MapCode（需網路+座標）
+  4) 完整流程         xlsx → JSON → 地理編碼 → MapCode
 
 ── 部署 ──────────────────────────────────
    本地
-  4) HTTP        http://localhost:8080   （快速測試）
-  5) HTTPS       https://localhost:8443  （PWA 完整功能）
-  6) HTTPS + Android  adb 轉發到手機     （本機安裝）
+  5) HTTP             http://localhost:8080   （快速測試）
+  6) HTTPS            https://localhost:8443  （PWA 完整功能）
+  7) HTTPS + Android  adb 轉發到手機          （本機安裝）
 
    遠端
-  7) GitHub Pages   gh-pages 分支部署
-  8) Netlify        CLI 一鍵部署
-  9) GitHub Release 打包 ZIP 上傳
+  8) GitHub Pages     gh-pages 分支部署
+  9) Netlify          CLI 一鍵部署
+  0) GitHub Release   打包 ZIP 上傳
 ```
 
 ### 手動啟動
@@ -117,13 +119,18 @@ Mapcode：33 095 245*87
    python3 scripts/xlsx_to_json.py
    ```
 
-4. 執行地理編碼（自動補上座標）：
+4. 執行地理編碼（自動補上座標 + MapCode）：
    ```bash
    pip install requests
    python3 scripts/geocode.py
    ```
 
-5. 在 PWA「行程管理」頁面點「匯入 JSON」，選擇產生的檔案。
+5. 或單獨補查 MapCode（需已有座標）：
+   ```bash
+   python3 scripts/mapcode.py
+   ```
+
+6. 在 PWA「行程管理」頁面點「匯入 JSON」，選擇產生的檔案。
 
 ### 方法二：手動編寫 JSON
 
@@ -170,4 +177,9 @@ Mapcode：33 095 245*87
 | 資料 | localStorage 多行程儲存 + JSON 匯入匯出 | 離線可用、支援多行程 |
 | 地圖 | Leaflet.js + OpenStreetMap | 免費、無 API Key、支援手機觸控 |
 | 座標 | Nominatim 預先地理編碼，結果寫入 JSON | 執行期不呼叫外部 API，完全離線 |
+| MapCode | [japanmapcode.com](https://japanmapcode.com/) API | 經緯度 → MapCode 自動查詢 |
 | PWA | `manifest.json` + Service Worker | 可加入主畫面、離線快取 |
+
+## 參考資料
+
+- [日本自駕遊 MapCode 查詢教學](https://hackmd.io/@farmer87/japan_mapcode) — MapCode API 用法參考
