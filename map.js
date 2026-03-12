@@ -46,6 +46,11 @@ function initMap() {
     attribution: '&copy; OpenStreetMap',
   }).addTo(map);
 
+  // Hide summary bar when popup closes (click elsewhere on map)
+  map.on('popupclose', () => {
+    document.getElementById('map-summary').hidden = true;
+  });
+
   buildLayers();
   fitVisible();
 

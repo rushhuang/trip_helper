@@ -219,15 +219,10 @@ body[data-view="manage-view"] #day-tabs {
 .view.active { display: block; }
 #map-view.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
-/* Map view: fill full screen, hide bottom nav */
+/* Map view: fill available space */
 body[data-view="map-view"] #main {
-  padding-bottom: 0;
   display: flex;
   flex-direction: column;
-}
-
-body[data-view="map-view"] #bottom-nav {
-  display: none;
 }
 
 /* ── Stop List ────────────────────────────────────────────────── */
@@ -512,6 +507,7 @@ body[data-view="map-view"] #bottom-nav {
   box-shadow: var(--shadow);
 }
 
+#map-summary[hidden] { display: none; }
 #map-summary {
   position: absolute;
   bottom: 8px;
