@@ -100,6 +100,63 @@ body {
   padding: 4px 8px;
 }
 
+/* ── Trip Selector ────────────────────────────────────────────── */
+#trip-selector {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 8px;
+  gap: 6px;
+}
+
+#trip-selector::-webkit-scrollbar { display: none; }
+
+.trip-pill {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s;
+}
+
+.trip-pill.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Desktop Nav (hidden on mobile) ──────────────────────────── */
+#desktop-nav {
+  display: none;
+}
+
+.desktop-nav-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s, background .15s;
+}
+
+.desktop-nav-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
 /* ── Day Tabs ─────────────────────────────────────────────────── */
 #day-tabs {
   display: flex;
@@ -715,5 +772,135 @@ body {
   .leaflet-control-attribution {
     background: rgba(255,255,255,.7) !important;
     color: #666 !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Desktop Layout (≥ 768px)
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+
+  body {
+    display: grid;
+    grid-template-areas:
+      "header  header"
+      "trips   trips"
+      "sidebar main";
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: auto auto 1fr;
+    height: 100dvh;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  /* ── Header: horizontal bar ─────────────────────────────────── */
+  #header {
+    grid-area: header;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    position: static;
+  }
+
+  #header h1 {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    font-size: 1.05rem;
+    text-align: left;
+  }
+
+  #search-wrap {
+    flex: 1;
+    max-width: 360px;
+  }
+
+  #desktop-nav {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── Trip Selector: full-width row ──────────────────────────── */
+  #trip-selector {
+    grid-area: trips;
+  }
+
+  /* ── Day Tabs → vertical sidebar ────────────────────────────── */
+  #day-tabs {
+    grid-area: sidebar;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    position: static;
+    padding: 8px 0;
+    gap: 0;
+  }
+
+  .day-tab {
+    border-bottom: none;
+    border-left: 3px solid transparent;
+    padding: 12px 16px;
+    text-align: left;
+    justify-content: flex-start;
+  }
+
+  .day-tab.active {
+    border-bottom-color: transparent;
+    border-left-color: var(--accent);
+    background: var(--bg-card-hover);
+  }
+
+  /* ── Main content ───────────────────────────────────────────── */
+  #main {
+    grid-area: main;
+    overflow-y: auto;
+    padding-bottom: 0;
+  }
+
+  /* Card width cap */
+  #stop-list {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  /* Map fills area */
+  #map-view.active {
+    height: 100%;
+  }
+
+  #map-container {
+    min-height: 0;
+    height: 100%;
+  }
+
+  /* Manage page width cap */
+  #manage-view {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* ── Hide bottom nav ────────────────────────────────────────── */
+  #bottom-nav {
+    display: none !important;
+  }
+
+  /* ── Toast position ─────────────────────────────────────────── */
+  #toast {
+    bottom: 40px;
+  }
+
+  /* ── Install banners ────────────────────────────────────────── */
+  #install-banner,
+  #ios-install-guide {
+    bottom: 20px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 480px;
+    width: calc(100% - 40px);
   }
 }

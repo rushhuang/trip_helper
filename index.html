@@ -23,7 +23,15 @@
       <input type="search" id="search-input" placeholder="搜尋地點..." autocomplete="off">
       <button id="search-clear" hidden>&times;</button>
     </div>
+    <nav id="desktop-nav">
+      <button class="desktop-nav-btn active" data-view="list-view" title="行程列表">&#x1F4CB; 行程</button>
+      <button class="desktop-nav-btn" data-view="map-view" title="路線地圖">&#x1F5FA; 地圖</button>
+      <button class="desktop-nav-btn" data-view="manage-view" title="行程管理">&#x2699; 管理</button>
+    </nav>
   </header>
+
+  <!-- Trip Selector (shown when ≥ 2 trips) -->
+  <nav id="trip-selector" hidden></nav>
 
   <!-- Day Tabs -->
   <nav id="day-tabs"></nav>
