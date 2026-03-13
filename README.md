@@ -5,7 +5,7 @@
 ## 功能特色
 
 - **離線可用** — Service Worker 快取，斷網仍可查閱全部行程
-- **多行程管理** — 匯入 / 匯出 / 切換多個旅遊行程
+- **多行程管理** — 匯入 / 匯出（支援 JSON 及 xlsx）/ 切換多個旅遊行程
 - **互動地圖** — Leaflet.js + OpenStreetMap，彩色編號標記 + 每日路線，點擊標記可跳轉行程列表
 - **快捷動作** — 一鍵複製 MapCode、Google Maps 導航、撥打電話、跳轉地圖
 - **列表↔地圖雙向跳轉** — 站點卡片點「地圖」自動篩選該日並定位；地圖點標記可跳回列表
@@ -85,7 +85,13 @@ adb reverse tcp:8443 tcp:8443
 
 ## 新增旅遊行程
 
-### 方法一：從 Excel 轉換
+### 方法一：PWA 內直接匯入（免安裝）
+
+在「行程管理」頁面點「匯入」，選擇 `.json` 或 `.xlsx` 檔案即可。
+
+> ⚠️ PWA 內匯入 xlsx **不含自動地理編碼與 MapCode 查詢**。若需補上座標與 MapCode，請使用方法二的 Python 腳本流程。
+
+### 方法二：從 Excel 轉換（含座標 + MapCode）
 
 完整範例檔：[`example/example.xlsx`](example/example.xlsx)、[`example/example.json`](example/example.json)
 
@@ -132,9 +138,9 @@ Mapcode：33 095 245*87
    python3 scripts/mapcode.py
    ```
 
-6. 在 PWA「行程管理」頁面點「匯入 JSON」，選擇產生的檔案。
+6. 在 PWA「行程管理」頁面點「匯入」，選擇產生的 JSON 檔案。
 
-### 方法二：手動編寫 JSON
+### 方法三：手動編寫 JSON
 
 參考以下格式建立 JSON 檔（或直接修改 [`example/example.json`](example/example.json)），再於 PWA 匯入：
 
