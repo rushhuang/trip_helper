@@ -1088,6 +1088,12 @@ body[data-view="map-view"] #main {
   font-size: 0.75rem;
 }
 
+.stop-warning {
+  color: #fbbf24;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* ── Add Stop Button ───────────────────────────────────────────── */
 .add-stop-btn {
   display: block;
