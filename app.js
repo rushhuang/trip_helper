@@ -2,6 +2,7 @@ import {
   listTrips, getTrip, getActiveTripId, setActiveTrip,
   importTrip, deleteTrip, exportTripJSON, loadActiveTrip, hasTrips, saveTrip,
 } from './trips.js';
+import { parseXlsx, exportXlsx } from './xlsx-utils.js';
 
 // ── Type → Icon mapping ──────────────────────────────────────────
 const TYPE_ICON = {
@@ -802,7 +803,7 @@ function renderTripManager() {
     const btnExport = document.createElement('button');
     btnExport.className = 'trip-action-btn';
     btnExport.textContent = '匯出';
-    btnExport.onclick = () => downloadTrip(meta.id, meta.title);
+    btnExport.onclick = () => openExportPicker(meta.id, meta.title);
     actions.appendChild(btnExport);
 
     const btnDelete = document.createElement('button');
@@ -830,13 +831,21 @@ function setupImport() {
     const file = fileInput.files[0];
     if (!file) return;
 
+    const isXlsx = file.name.toLowerCase().endsWith('.xlsx');
+
     try {
-      const text = await file.text();
-      const json = JSON.parse(text);
+      let json;
+      if (isXlsx) {
+        const buf = await file.arrayBuffer();
+        json = parseXlsx(buf);
+      } else {
+        const text = await file.text();
+        json = JSON.parse(text);
+      }
 
       // Validate basic structure
       if (!json.trip || !json.days || !Array.isArray(json.days)) {
-        showToast('JSON 格式錯誤：需要 trip 和 days 欄位');
+        showToast('格式錯誤：需要 trip 和 days 欄位');
         return;
       }
 
@@ -845,8 +854,12 @@ function setupImport() {
       loadCurrentTrip();
       renderTripManager();
       showToast(`已匯入「${json.trip.title || 'Untitled'}」`);
+
+      if (isXlsx) {
+        setTimeout(() => showToast('提示：xlsx 匯入不含座標與 MapCode，如需補上請使用 Python 腳本'), 2000);
+      }
     } catch (e) {
-      showToast('匯入失敗：無效的 JSON 檔案');
+      showToast(`匯入失敗：無效的${isXlsx ? ' Excel' : ' JSON'} 檔案`);
       console.error(e);
     }
 
@@ -869,6 +882,42 @@ function downloadTrip(id, title) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('已匯出 JSON');
+}
+
+// ── Export Format Picker ─────────────────────────────────────────
+function openExportPicker(id, title) {
+  const modal = document.getElementById('day-picker-modal');
+  modal.hidden = false;
+  modal.innerHTML = `<div class="modal-card"><h3>匯出格式</h3>
+    <div class="day-picker-list">
+      <button class="day-picker-row" data-fmt="json">&#x1F4C4; JSON</button>
+      <button class="day-picker-row" data-fmt="xlsx">&#x1F4CA; Excel (.xlsx)</button>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="export-cancel">取消</button>
+    </div></div>`;
+
+  document.getElementById('export-cancel').onclick = () => { modal.hidden = true; };
+  modal.onclick = e => { if (e.target === modal) modal.hidden = true; };
+
+  modal.querySelectorAll('.day-picker-row').forEach(btn => {
+    btn.onclick = () => {
+      modal.hidden = true;
+      if (btn.dataset.fmt === 'json') {
+        downloadTrip(id, title);
+      } else {
+        downloadTripXlsx(id, title);
+      }
+    };
+  });
+}
+
+function downloadTripXlsx(id, title) {
+  const tripData = getTrip(id);
+  if (!tripData) { showToast('匯出失敗'); return; }
+  const filename = `${title || 'trip'}.xlsx`;
+  exportXlsx(tripData, filename);
+  showToast('已匯出 Excel');
 }
 
 // ── Install Banner ───────────────────────────────────────────────

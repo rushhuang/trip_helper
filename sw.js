@@ -1,10 +1,11 @@
-const CACHE_VERSION = 'trip-v13';
+const CACHE_VERSION = 'trip-v14';
 const APP_SHELL = [
   'index.html',
   'style.css',
   'app.js',
   'map.js',
   'trips.js',
+  'xlsx-utils.js',
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
@@ -60,8 +61,8 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // CDN assets (Leaflet): cache after first fetch
-  if (url.hostname === 'unpkg.com') {
+  // CDN assets (Leaflet, SheetJS): cache after first fetch
+  if (url.hostname === 'unpkg.com' || url.hostname === 'cdn.sheetjs.com') {
     e.respondWith(
       caches.open(CACHE_VERSION).then(cache =>
         cache.match(e.request).then(cached => {
