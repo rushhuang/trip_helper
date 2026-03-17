@@ -59,6 +59,7 @@ function initMap() {
   // Controls
   document.getElementById('btn-fit-all').onclick = fitVisible;
   document.getElementById('btn-fit-today').onclick = fitToday;
+  document.getElementById('btn-my-location').onclick = locateMe;
 }
 
 // ── Build Layers ─────────────────────────────────────────────────
@@ -266,6 +267,73 @@ function fitToday() {
   });
   updateChips();
   updateMapLayers();
+}
+
+// ── Geolocation: My Location ────────────────────────────────────
+let myLocationMarker = null;
+let myLocationCircle = null;
+
+function locateMe() {
+  if (!map) return;
+  if (!navigator.geolocation) {
+    showToast('此裝置不支援定位功能');
+    return;
+  }
+
+  const btn = document.getElementById('btn-my-location');
+  btn.classList.add('locating');
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      btn.classList.remove('locating');
+      const { latitude, longitude, accuracy } = pos.coords;
+      const latlng = [latitude, longitude];
+
+      // Remove old marker/circle
+      if (myLocationMarker) map.removeLayer(myLocationMarker);
+      if (myLocationCircle) map.removeLayer(myLocationCircle);
+
+      // Accuracy circle
+      myLocationCircle = L.circle(latlng, {
+        radius: accuracy,
+        color: '#4285F4',
+        fillColor: '#4285F4',
+        fillOpacity: 0.15,
+        weight: 1,
+      }).addTo(map);
+
+      // Blue dot marker
+      myLocationMarker = L.marker(latlng, {
+        icon: L.divIcon({
+          className: 'my-location-icon',
+          html: '<div class="my-location-dot"></div>',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        }),
+        zIndexOffset: 1000,
+      }).addTo(map).bindPopup('我的位置');
+
+      map.setView(latlng, 15, { animate: true });
+    },
+    err => {
+      btn.classList.remove('locating');
+      const msgs = {
+        1: '定位權限被拒絕，請在設定中允許',
+        2: '無法取得位置資訊',
+        3: '定位逾時，請重試',
+      };
+      showToast(msgs[err.code] || '定位失敗');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+  );
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.hidden = true; }, 3000);
 }
 
 // ── Focus stop from list view ───────────────────────────────────
