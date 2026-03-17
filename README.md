@@ -6,7 +6,7 @@
 
 - **離線可用** — Service Worker 快取，斷網仍可查閱全部行程
 - **多行程管理** — 匯入 / 匯出（支援 JSON 及 xlsx）/ 切換多個旅遊行程
-- **互動地圖** — Leaflet.js + OpenStreetMap，彩色編號標記 + 每日路線，點擊標記可跳轉行程列表
+- **互動地圖** — Leaflet.js + OpenStreetMap，彩色編號標記 + 每日路線，點擊標記可跳轉行程列表，GPS 定位顯示當前位置
 - **快捷動作** — 一鍵複製 MapCode、Google Maps 導航、撥打電話、跳轉地圖
 - **列表↔地圖雙向跳轉** — 站點卡片點「地圖」自動篩選該日並定位；地圖點標記可跳回列表
 - **全文搜尋** — 跨日即時篩選地點名稱、地址、備注
@@ -27,7 +27,7 @@ trip_helper/
 │   ├── sw.js               Service Worker（離線快取）
 │   ├── style.css           樣式（含深色/淺色模式）
 │   ├── app.js              主程式（行程列表 + 搜尋 + 編輯 + 時間管理）
-│   ├── map.js              地圖模組（Leaflet 標記 + 路線）
+│   ├── map.js              地圖模組（Leaflet 標記 + 路線 + GPS 定位）
 │   ├── trips.js            行程管理模組（localStorage CRUD）
 │   ├── xlsx-utils.js       xlsx 匯入匯出模組（SheetJS）
 │   └── icons/              PWA 圖示（192/512，any/maskable）
