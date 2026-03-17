@@ -29,11 +29,18 @@ trip_helper/
 │   ├── app.js              主程式（行程列表 + 搜尋 + 編輯 + 時間管理）
 │   ├── map.js              地圖模組（Leaflet 標記 + 路線）
 │   ├── trips.js            行程管理模組（localStorage CRUD）
+│   ├── xlsx-utils.js       xlsx 匯入匯出模組（SheetJS）
 │   └── icons/              PWA 圖示（192/512，any/maskable）
 ├── scripts/
 │   ├── xlsx_to_json.py     Excel → JSON 轉換腳本
+│   ├── json_to_xlsx.py     JSON → Excel 轉換腳本
 │   ├── geocode.py          Nominatim 地理編碼 + MapCode 查詢
 │   └── mapcode.py          MapCode 單獨查詢腳本
+├── tests/                  單元測試
+│   ├── test_xlsx_to_json.py
+│   ├── test_json_to_xlsx.py
+│   ├── test_roundtrip.py
+│   └── test-xlsx-utils.html
 ├── example/
 │   ├── example.xlsx        Excel 格式範例（3 天 6 站）
 │   └── example.json        itinerary.json 格式範例
@@ -53,20 +60,22 @@ trip_helper/
 ```
 ── 轉換 ──────────────────────────────────
   1) xlsx → JSON     Excel 轉行程資料
-  2) 地理編碼         補上座標（需網路）
-  3) MapCode 查詢    補上 MapCode（需網路+座標）
-  4) 完整流程         xlsx → JSON → 地理編碼 → MapCode
+  2) JSON → xlsx     行程資料轉 Excel
+  3) 地理編碼         補上座標（需網路）
+  4) MapCode 查詢    補上 MapCode（需網路+座標）
+  5) 完整流程         xlsx → JSON → 地理編碼 → MapCode
+  6) 單元測試         執行 Python 測試（66 項）
 
 ── 部署 ──────────────────────────────────
    本地
-  5) HTTP             http://localhost:8080   （快速測試）
-  6) HTTPS            https://localhost:8443  （PWA 完整功能）
-  7) HTTPS + Android  adb 轉發到手機          （本機安裝）
+  7) HTTP             http://localhost:8080   （快速測試）
+  8) HTTPS            https://localhost:8443  （PWA 完整功能）
+  9) HTTPS + Android  adb 轉發到手機          （本機安裝）
 
    遠端
-  8) GitHub Pages     gh-pages 分支部署
-  9) Netlify          CLI 一鍵部署
-  0) GitHub Release   打包 ZIP 上傳
+  a) GitHub Pages     gh-pages 分支部署
+  b) Netlify          CLI 一鍵部署
+  c) GitHub Release   打包 ZIP 上傳
 ```
 
 ### 手動啟動
@@ -188,6 +197,7 @@ Mapcode：33 095 245*87
 | 地圖 | Leaflet.js + OpenStreetMap | 免費、無 API Key、支援手機觸控 |
 | 座標 | Nominatim 預先地理編碼，結果寫入 JSON | 執行期不呼叫外部 API，完全離線 |
 | MapCode | [japanmapcode.com](https://japanmapcode.com/) API | 經緯度 → MapCode 自動查詢 |
+| xlsx | [SheetJS](https://docs.sheetjs.com/) 瀏覽器端讀寫 | PWA 內直接匯入匯出 Excel |
 | PWA | `manifest.json` + Service Worker | 可加入主畫面、離線快取 |
 
 ## 參考資料

@@ -26,24 +26,26 @@ print_menu() {
     echo ""
     echo -e "${MAGENTA}── 轉換 ──────────────────────────────────${RESET}"
     echo "  1) xlsx → JSON     Excel 轉行程資料"
-    echo "  2) 地理編碼         補上座標（需網路）"
-    echo "  3) MapCode 查詢    補上 MapCode（需網路+座標）"
-    echo "  4) 完整流程         xlsx → JSON → 地理編碼 → MapCode"
+    echo "  2) JSON → xlsx     行程資料轉 Excel"
+    echo "  3) 地理編碼         補上座標（需網路）"
+    echo "  4) MapCode 查詢    補上 MapCode（需網路+座標）"
+    echo "  5) 完整流程         xlsx → JSON → 地理編碼 → MapCode"
+    echo "  6) 單元測試         執行 Python 測試（66 項）"
     echo ""
     echo -e "${CYAN}── 部署 ──────────────────────────────────${RESET}"
     echo -e "${CYAN}   本地${RESET}"
-    echo "  5) HTTP             http://localhost:8080   （快速測試）"
-    echo "  6) HTTPS            https://localhost:8443  （PWA 完整功能）"
-    echo "  7) HTTPS + Android  adb 轉發到手機          （本機安裝）"
+    echo "  7) HTTP             http://localhost:8080   （快速測試）"
+    echo "  8) HTTPS            https://localhost:8443  （PWA 完整功能）"
+    echo "  9) HTTPS + Android  adb 轉發到手機          （本機安裝）"
     echo ""
     echo -e "${CYAN}   遠端${RESET}"
-    echo "  8) GitHub Pages     gh-pages 分支部署"
-    echo "  9) Netlify          CLI 一鍵部署"
-    echo "  0) GitHub Release   打包 ZIP 上傳"
+    echo "  a) GitHub Pages     gh-pages 分支部署"
+    echo "  b) Netlify          CLI 一鍵部署"
+    echo "  c) GitHub Release   打包 ZIP 上傳"
     echo ""
     echo "  q) 離開"
     echo ""
-    echo -n "請輸入選項 [0-9, q]： "
+    echo -n "請輸入選項 [1-9, a-c, q]： "
 }
 
 # ── 工具：找可用 port ────────────────────────────────────────────────────
@@ -85,7 +87,29 @@ convert_xlsx() {
     read -rp $'\n按 Enter 返回選單…'
 }
 
-# ── 2) 地理編碼 ───────────────────────────────────────────────────────────
+# ── 2) JSON → xlsx ──────────────────────────────────────────────────────
+convert_json_to_xlsx() {
+    echo -e "\n${GREEN}▶ JSON → xlsx 轉換${RESET}"
+
+    if ! check_pkg openpyxl; then
+        echo -e "${YELLOW}  安裝 openpyxl…${RESET}"
+        pip install openpyxl
+    fi
+
+    local json_path="$PWA/data/itinerary.json"
+    if [[ ! -f "$json_path" ]]; then
+        echo -e "${RED}✗ 找不到 pwa/data/itinerary.json，請先執行選項 1${RESET}"
+        read -rp $'\n按 Enter 返回選單…'
+        return
+    fi
+
+    echo -e "  來源：${BOLD}pwa/data/itinerary.json${RESET}\n"
+    python3 "$SCRIPTS/json_to_xlsx.py"
+    echo -e "\n${GREEN}  ✓ 轉換完成${RESET}"
+    read -rp $'\n按 Enter 返回選單…'
+}
+
+# ── 3) 地理編碼 ──────────────────────────────────────────────────────────
 run_geocode() {
     echo -e "\n${GREEN}▶ 地理編碼（Nominatim）${RESET}"
 
@@ -336,22 +360,38 @@ deploy_release() {
     read -rp $'\n按 Enter 返回選單…'
 }
 
+# ── t) 單元測試 ─────────────────────────────────────────────────────────
+run_tests() {
+    echo -e "\n${GREEN}▶ 執行單元測試${RESET}\n"
+
+    if ! check_pkg openpyxl; then
+        echo -e "${YELLOW}  安裝 openpyxl…${RESET}"
+        pip install openpyxl
+    fi
+
+    python3 -m unittest tests/test_xlsx_to_json.py tests/test_json_to_xlsx.py tests/test_roundtrip.py -v 2>&1 | grep -v '^✅'
+    echo ""
+    read -rp $'按 Enter 返回選單…'
+}
+
 # ── 主迴圈 ───────────────────────────────────────────────────────────────
 main() {
     while true; do
         print_menu
         read -r choice
         case "$choice" in
-            1) convert_xlsx    ;;
-            2) run_geocode     ;;
-            3) run_mapcode     ;;
-            4) convert_full    ;;
-            5) serve_http      ;;
-            6) serve_https     ;;
-            7) serve_android   ;;
-            8) deploy_gh_pages ;;
-            9) deploy_netlify  ;;
-            0) deploy_release  ;;
+            1) convert_xlsx         ;;
+            2) convert_json_to_xlsx ;;
+            3) run_geocode          ;;
+            4) run_mapcode          ;;
+            5) convert_full         ;;
+            6) run_tests            ;;
+            7) serve_http           ;;
+            8) serve_https          ;;
+            9) serve_android        ;;
+            a|A) deploy_gh_pages    ;;
+            b|B) deploy_netlify     ;;
+            c|C) deploy_release     ;;
             q|Q) echo -e "\n${DIM}Bye!${RESET}\n"; exit 0 ;;
             *) echo -e "${RED}無效選項${RESET}"; sleep 1 ;;
         esac

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>xlsx-utils.js 單元測試</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+    h1 { color: #4DABF7; }
+    .suite { margin: 16px 0; }
+    .suite-name { font-weight: bold; color: #DA77F2; margin: 8px 0; }
+    .pass { color: #69DB7C; }
+    .fail { color: #FF6B6B; font-weight: bold; }
+    .summary { margin-top: 24px; padding: 12px; border-radius: 8px; font-size: 1.2em; }
+    .summary.all-pass { background: #2b4a2e; }
+    .summary.has-fail { background: #4a2b2b; }
+  </style>
+</head>
+<body>
+  <h1>xlsx-utils.js 單元測試</h1>
+  <div id="results"></div>
+  <div id="summary"></div>
+
+  <script type="module">
+    import { parseXlsx, exportXlsx } from '../pwa/xlsx-utils.js';
+
+    // ── 簡易測試框架 ────────────────────────────────────────────
+    let totalPass = 0, totalFail = 0;
+    const results = document.getElementById('results');
+
+    function suite(name, fn) {
+      const div = document.createElement('div');
+      div.className = 'suite';
+      div.innerHTML = `<div class="suite-name">▸ ${name}</div>`;
+      results.appendChild(div);
+      fn((label, actual, expected) => {
+        const pass = JSON.stringify(actual) === JSON.stringify(expected);
+        if (pass) totalPass++; else totalFail++;
+        const el = document.createElement('div');
+        el.className = pass ? 'pass' : 'fail';
+        el.textContent = pass
+          ? `  ✓ ${label}`
+          : `  ✗ ${label}  — expected: ${JSON.stringify(expected)}, got: ${JSON.stringify(actual)}`;
+        div.appendChild(el);
+      });
+    }
+
+    // ── 建立測試用 xlsx ──────────────────────────────────────────
+    function createTestWorkbook() {
+      const wb = XLSX.utils.book_new();
+      const aoa = [
+        ['日期', '時間', '地點名稱', '詳細資訊', '備注'],
+        [],
+        ['4/1(二)', '09:00', '那覇機場',
+         'Mapcode：33 002 500*00\n地址：沖縄県那覇市鏡水150\n電話：098-840-1151',
+         '抵達沖繩'],
+        [null, '12:00', '海鮮食堂',
+         'Mapcode：33 095 111*22\n地址：沖縄県那覇市牧志3-1\n電話：098-111-2222\n營業時間：10:00-21:00\n🅿️ 附設停車場',
+         '停留約1.5小時'],
+        [null, '14:30', '首里城公園',
+         'Mapcode：33 161 526*71\n地址：沖縄県那覇市首里金城町1-2\n營業時間：08:30-18:00\n🅿️ 付費停車場',
+         '停留約2hr\n開車過來約20分鐘'],
+        ['4/2(三)', '10:00', '美麗海水族館',
+         'Mapcode：553 075 797*74\n地址：沖縄県国頭郡本部町石川424\n電話：0980-48-3748\n營業時間：08:30-18:30\n🅿️ 免費停車場',
+         '停留約3小時\n開車過來約1小時'],
+        [null, '15:00', 'HOTEL STRATA',
+         'Mapcode：206 096 103*11\n地址：沖縄県名護市大南2-14-5\n電話：0980-43-0001',
+         'check-in'],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      XLSX.utils.book_append_sheet(wb, ws, '測試行程表');
+      return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // ── 測試：parseXlsx ──────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+
+    const xlsxBuf = createTestWorkbook();
+    const parsed = parseXlsx(xlsxBuf);
+
+    suite('parseXlsx — 基本結構', (assert) => {
+      assert('trip.title 為工作表名稱', parsed.trip.title, '測試行程表');
+      assert('days 有 2 天', parsed.days.length, 2);
+      assert('day1 date', parsed.days[0].date, '4/1');
+      assert('day2 date', parsed.days[1].date, '4/2');
+      assert('day1 label 含星期', parsed.days[0].label, '4/1 (二)');
+      assert('day2 label 含星期', parsed.days[1].label, '4/2 (三)');
+      assert('day1 color 為調色盤第 1 色', parsed.days[0].color, '#FF6B6B');
+      assert('day2 color 為調色盤第 2 色', parsed.days[1].color, '#FFA94D');
+      assert('dates 日期範圍', parsed.trip.dates, '4/1 (二) – 4/2 (三)');
+    });
+
+    suite('parseXlsx — 站點數量', (assert) => {
+      assert('day1 有 3 站', parsed.days[0].stops.length, 3);
+      assert('day2 有 2 站', parsed.days[1].stops.length, 2);
+    });
+
+    suite('parseXlsx — 站點名稱與類型', (assert) => {
+      const d1 = parsed.days[0].stops;
+      const d2 = parsed.days[1].stops;
+      assert('stop1 name', d1[0].name, '那覇機場');
+      assert('stop1 type = transport', d1[0].type, 'transport');
+      assert('stop2 name', d1[1].name, '海鮮食堂');
+      assert('stop2 type = food', d1[1].type, 'food');
+      assert('stop3 name', d1[2].name, '首里城公園');
+      assert('stop3 type = sight', d1[2].type, 'sight');
+      assert('stop4 name', d2[0].name, '美麗海水族館');
+      assert('stop4 type = sight', d2[0].type, 'sight');
+      assert('stop5 name', d2[1].name, 'HOTEL STRATA');
+      assert('stop5 type = stay', d2[1].type, 'stay');
+    });
+
+    suite('parseXlsx — 時間', (assert) => {
+      assert('stop1 time', parsed.days[0].stops[0].time, '09:00');
+      assert('stop2 time', parsed.days[0].stops[1].time, '12:00');
+      assert('stop3 time', parsed.days[0].stops[2].time, '14:30');
+    });
+
+    suite('parseXlsx — D 欄解析', (assert) => {
+      const s1 = parsed.days[0].stops[0];
+      assert('stop1 mapcode', s1.mapcode, '33 002 500*00');
+      assert('stop1 address', s1.address, '沖縄県那覇市鏡水150');
+      assert('stop1 phone', s1.phone, '098-840-1151');
+
+      const s2 = parsed.days[0].stops[1];
+      assert('stop2 hours', s2.hours, '10:00-21:00');
+      assert('stop2 parking', s2.parking, '附設停車場');
+    });
+
+    suite('parseXlsx — 停留/交通時間', (assert) => {
+      assert('stop2 duration = 90', parsed.days[0].stops[1].duration, 90);
+      assert('stop3 duration = 120', parsed.days[0].stops[2].duration, 120);
+      assert('stop3 travelTime = 20', parsed.days[0].stops[2].travelTime, 20);
+      assert('stop4 duration = 180', parsed.days[1].stops[0].duration, 180);
+      assert('stop4 travelTime = 60', parsed.days[1].stops[0].travelTime, 60);
+      assert('stop1 duration = null (無)', parsed.days[0].stops[0].duration, null);
+      assert('stop1 travelTime = null (無)', parsed.days[0].stops[0].travelTime, null);
+    });
+
+    suite('parseXlsx — ID 與預設值', (assert) => {
+      assert('stop ID 格式 stop_001', parsed.days[0].stops[0].id, 'stop_001');
+      assert('stop ID 遞增 stop_002', parsed.days[0].stops[1].id, 'stop_002');
+      assert('lat = null', parsed.days[0].stops[0].lat, null);
+      assert('lng = null', parsed.days[0].stops[0].lng, null);
+    });
+
+    suite('parseXlsx — 跳過無效名稱', (assert) => {
+      // 建立含 TBD 和「早餐」的 xlsx
+      const wb2 = XLSX.utils.book_new();
+      const aoa2 = [
+        ['日期', '時間', '名稱', '資訊', '備注'],
+        [],
+        ['4/1(一)', '09:00', 'TBD', '', ''],
+        [null, '09:30', '早餐', '', ''],
+        [null, '10:00', '有效景點', '', ''],
+        [null, '11:00', '', '', ''],
+      ];
+      const ws2 = XLSX.utils.aoa_to_sheet(aoa2);
+      XLSX.utils.book_append_sheet(wb2, ws2, 'Sheet1');
+      const buf2 = XLSX.write(wb2, { type: 'array', bookType: 'xlsx' });
+      const p2 = parseXlsx(buf2);
+
+      assert('跳過 TBD + 早餐 + 空名稱，只剩 1 站', p2.days[0].stops.length, 1);
+      assert('保留有效景點', p2.days[0].stops[0].name, '有效景點');
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // ── 測試：exportXlsx → parseXlsx 往返 ───────────────────────
+    // ══════════════════════════════════════════════════════════════
+
+    suite('exportXlsx — 往返測試', (assert) => {
+      const tripData = {
+        trip: { title: '往返測試行程', dates: '4/1 – 4/2' },
+        days: [
+          {
+            date: '4/1', label: '4/1 (二)', color: '#FF6B6B',
+            stops: [
+              {
+                id: 's1', time: '09:00', type: 'transport', name: '測試機場',
+                mapcode: '12 345 678*90', address: '測試地址一',
+                phone: '098-000-0001', hours: '24小時', parking: '免費',
+                note: '抵達', lat: 26.0, lng: 127.0, duration: null, travelTime: null,
+              },
+              {
+                id: 's2', time: '12:00', type: 'food', name: '測試餐廳',
+                mapcode: '12 345 678*91', address: '測試地址二',
+                phone: '098-000-0002', hours: '11:00-22:00', parking: '路邊停車',
+                note: '', lat: 26.1, lng: 127.1, duration: 90, travelTime: 20,
+              },
+            ],
+          },
+          {
+            date: '4/2', label: '4/2 (三)', color: '#FFA94D',
+            stops: [
+              {
+                id: 's3', time: '10:00', type: 'sight', name: '測試景點',
+                mapcode: '55 307 579*74', address: '測試地址三',
+                phone: '098-000-0003', hours: '08:30-17:00', parking: '付費',
+                note: '推薦必看', lat: 26.5, lng: 127.5, duration: 120, travelTime: 45,
+              },
+            ],
+          },
+        ],
+      };
+
+      // Export to xlsx in memory
+      const wb = XLSX.utils.book_new();
+      const aoa = [['日期', '時間', '地點名稱', '詳細資訊', '備注'], []];
+      tripData.days.forEach(day => {
+        day.stops.forEach((stop, i) => {
+          const dateCell = i === 0 ? day.label : '';
+          const dParts = [];
+          if (stop.mapcode) dParts.push(`Mapcode：${stop.mapcode}`);
+          if (stop.address) dParts.push(`地址：${stop.address}`);
+          if (stop.phone) dParts.push(`電話：${stop.phone}`);
+          if (stop.hours) dParts.push(`營業時間：${stop.hours}`);
+          if (stop.parking) dParts.push(`🅿️ ${stop.parking}`);
+          const eParts = [];
+          if (stop.note) eParts.push(stop.note);
+          if (stop.duration && !(stop.note && stop.note.includes('停留'))) {
+            const h = Math.floor(stop.duration / 60), m = stop.duration % 60;
+            eParts.push(`停留約${h ? h + '小時' : ''}${m ? m + '分鐘' : ''}`);
+          }
+          if (stop.travelTime && !(stop.note && (stop.note.includes('開車') || stop.note.includes('車程')))) {
+            eParts.push(`開車過來約${stop.travelTime}分鐘`);
+          }
+          aoa.push([dateCell, stop.time, stop.name, dParts.join('\n'), eParts.join('\n')]);
+        });
+      });
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      XLSX.utils.book_append_sheet(wb, ws, tripData.trip.title.slice(0, 31));
+      const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+
+      // Parse back
+      const rt = parseXlsx(buf);
+
+      assert('往返：天數', rt.days.length, 2);
+      assert('往返：day1 stops', rt.days[0].stops.length, 2);
+      assert('往返：day2 stops', rt.days[1].stops.length, 1);
+
+      // Stop 1
+      assert('往返：s1 name', rt.days[0].stops[0].name, '測試機場');
+      assert('往返：s1 mapcode', rt.days[0].stops[0].mapcode, '12 345 678*90');
+      assert('往返：s1 address', rt.days[0].stops[0].address, '測試地址一');
+      assert('往返：s1 phone', rt.days[0].stops[0].phone, '098-000-0001');
+      assert('往返：s1 hours', rt.days[0].stops[0].hours, '24小時');
+
+      // Stop 2 — duration/travelTime
+      assert('往返：s2 duration', rt.days[0].stops[1].duration, 90);
+      assert('往返：s2 travelTime', rt.days[0].stops[1].travelTime, 20);
+
+      // Stop 3
+      assert('往返：s3 name', rt.days[1].stops[0].name, '測試景點');
+      assert('往返：s3 duration', rt.days[1].stops[0].duration, 120);
+      assert('往返：s3 travelTime', rt.days[1].stops[0].travelTime, 45);
+      assert('往返：s3 note 含原文', rt.days[1].stops[0].note.includes('推薦必看'), true);
+    });
+
+    // ── 顯示總結 ────────────────────────────────────────────────
+    const summaryEl = document.getElementById('summary');
+    summaryEl.className = 'summary ' + (totalFail === 0 ? 'all-pass' : 'has-fail');
+    summaryEl.textContent = totalFail === 0
+      ? `✅ 全部通過！${totalPass} 項測試`
+      : `❌ ${totalFail} 項失敗 / ${totalPass + totalFail} 項測試`;
+  </script>
+</body>
+</html>

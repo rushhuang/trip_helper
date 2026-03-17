@@ -58,8 +58,8 @@
     <section id="manage-view" class="view">
       <div class="manage-header">
         <h2>行程管理</h2>
-        <button id="btn-import" class="import-btn">匯入 JSON</button>
-        <input type="file" id="import-file" accept=".json,application/json" hidden>
+        <button id="btn-import" class="import-btn">匯入</button>
+        <input type="file" id="import-file" accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
       </div>
       <div id="trip-list"></div>
     </section>
@@ -104,6 +104,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="app.js" type="module"></script>
   <script src="map.js" type="module"></script>
 </body>
