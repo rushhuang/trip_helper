@@ -152,7 +152,7 @@ function renderStops() {
       travel.textContent = `\u{1F697} ${stop.travelTime} min`;
       container.appendChild(travel);
     }
-    container.appendChild(createStopCard(stop, i + 1, dayData.color, dayData.date));
+    container.appendChild(createStopCard(stop, i + 1, dayData.color, dayData.date, dayData.label));
   });
 
   // Add stop button
@@ -176,7 +176,7 @@ function renderStops() {
   container.appendChild(addBtn);
 }
 
-function createStopCard(stop, num, color, dayDate) {
+function createStopCard(stop, num, color, dayDate, dayLabel) {
   const card = document.createElement('div');
   card.className = 'stop-card';
   card.id = `card-${stop.id}`;
@@ -184,6 +184,8 @@ function createStopCard(stop, num, color, dayDate) {
   const icon = TYPE_ICON[stop.type] || '\u{1F4CD}';
   const timeText = stop.time || '';
   const durText = stop.duration ? `${stop.duration >= 60 ? Math.floor(stop.duration / 60) + 'h' : ''}${stop.duration % 60 ? stop.duration % 60 + 'min' : ''}` : '';
+  const conflict = checkTimeConflict(stop, dayLabel);
+  const warnHTML = conflict ? `<span class="stop-warning">${conflict.icon} ${conflict.msg}</span>` : '';
 
   const header = document.createElement('div');
   header.className = 'stop-header';
@@ -192,7 +194,7 @@ function createStopCard(stop, num, color, dayDate) {
     <span class="stop-icon">${icon}</span>
     <div class="stop-info">
       <div class="stop-name">${esc(stop.name)}</div>
-      ${timeText || durText ? `<div class="stop-time">${esc(timeText)}${timeText && durText ? ' · ' : ''}${durText ? '<span class="stop-duration">' + durText + '</span>' : ''}</div>` : ''}
+      ${timeText || durText || warnHTML ? `<div class="stop-time">${esc(timeText)}${timeText && durText ? ' · ' : ''}${durText ? '<span class="stop-duration">' + durText + '</span>' : ''}${warnHTML ? ' ' + warnHTML : ''}</div>` : ''}
     </div>
     <span class="stop-chevron">&#x276F;</span>
   `;
@@ -332,6 +334,104 @@ function showToast(msg) {
 }
 window.showToast = showToast;
 
+// ── 13-C: Business Hours Conflict Detection ─────────────────────────
+
+const DOW_MAP = { '日': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6 };
+
+function toMins(h, m) { return h * 60 + m; }
+
+/** Parse time ranges from hours string, e.g. "11:00-14:00, 17:00-21:00" → [[660,840],[1020,1260]] */
+function parseTimeRanges(hoursStr) {
+  if (!hoursStr) return [];
+  // Skip all-day / 24h patterns
+  if (/全天|全年|24\s*小時|24\s*h/i.test(hoursStr)) return [];
+  const ranges = [];
+  const re = /(\d{1,2})[：:](\d{2})\s*[-–~～]\s*(\d{1,2})[：:](\d{2})/g;
+  let m;
+  while ((m = re.exec(hoursStr))) {
+    const start = toMins(parseInt(m[1]), parseInt(m[2]));
+    const end = toMins(parseInt(m[3]), parseInt(m[4]));
+    if (end > start) ranges.push([start, end]);
+  }
+  return ranges;
+}
+
+/** Extract closed weekdays from hours string, returns Set of DOW numbers (0=日..6=六) */
+function parseClosedDays(hoursStr) {
+  if (!hoursStr) return new Set();
+  const closed = new Set();
+  // Match patterns: 週X公休, 週X店休, 週X休, 週X定休
+  const re = /週([日一二三四五六])/g;
+  // Only match if followed by 公休/店休/休/定休 context
+  if (/(公休|店休|定休|休み|休日)/.test(hoursStr)) {
+    let m;
+    while ((m = re.exec(hoursStr))) {
+      const dow = DOW_MAP[m[1]];
+      if (dow !== undefined) closed.add(dow);
+    }
+  }
+  // Also match 水曜定休 etc. (Japanese weekday names)
+  const jpDow = { '月': 1, '火': 2, '水': 3, '木': 4, '金': 5, '土': 6, '日': 0 };
+  const jpRe = /([月火水木金土日])曜[日]?定休/g;
+  let jm;
+  while ((jm = jpRe.exec(hoursStr))) {
+    const dow = jpDow[jm[1]];
+    if (dow !== undefined) closed.add(dow);
+  }
+  return closed;
+}
+
+/** Get day-of-week number from day label like "3/19 (四)" */
+function getDowFromLabel(dayLabel) {
+  if (!dayLabel) return null;
+  const m = dayLabel.match(/[（(]\s*([日一二三四五六])\s*[）)]/);
+  return m ? DOW_MAP[m[1]] : null;
+}
+
+/** Check for time conflicts. Returns { icon, msg } or null. */
+function checkTimeConflict(stop, dayLabel) {
+  if (!stop.time || !stop.hours) return null;
+
+  const timeParts = stop.time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!timeParts) return null;
+  const arrival = toMins(parseInt(timeParts[1]), parseInt(timeParts[2]));
+
+  // Check closed day first
+  const dow = getDowFromLabel(dayLabel);
+  if (dow !== null) {
+    const closedDays = parseClosedDays(stop.hours);
+    if (closedDays.has(dow)) {
+      return { icon: '\u26A0\uFE0F', msg: '公休日' };
+    }
+  }
+
+  // Check time ranges
+  const ranges = parseTimeRanges(stop.hours);
+  if (!ranges.length) return null;
+
+  // Sort ranges by start time
+  ranges.sort((a, b) => a[0] - b[0]);
+
+  const earliest = ranges[0][0];
+  const latest = ranges[ranges.length - 1][1];
+
+  if (arrival < earliest) {
+    return { icon: '\u26A0\uFE0F', msg: '尚未營業' };
+  }
+  if (arrival >= latest) {
+    return { icon: '\u26A0\uFE0F', msg: '已打烊' };
+  }
+
+  // Check if arrival falls in a gap between ranges
+  for (let i = 0; i < ranges.length - 1; i++) {
+    if (arrival >= ranges[i][1] && arrival < ranges[i + 1][0]) {
+      return { icon: '\u26A0\uFE0F', msg: '休息時段' };
+    }
+  }
+
+  return null;
+}
+
 // ── Persist + Sync (shared save pipeline) ─────────────────────────
 function persistAndSync() {
   const id = getActiveTripId();
@@ -407,7 +507,7 @@ function setupSearch() {
 
       matches.forEach(stop => {
         const idx = day.stops.indexOf(stop) + 1;
-        container.appendChild(createStopCard(stop, idx, day.color, day.date));
+        container.appendChild(createStopCard(stop, idx, day.color, day.date, day.label));
         found++;
       });
     });
